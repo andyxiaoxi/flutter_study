@@ -27,6 +27,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:handclick/network/http_config.dart';
+import 'package:handclick/network/response/data_parse.dart';
 import 'response/response.dart';
 import 'request/request.dart';
 
@@ -39,7 +40,7 @@ abstract class HttpClient {
 
   //未来会设置，同步发送，异步发送
 
-  Future<Response<T>> send<T>(Request request);
+  Future<Response<T>> send<T extends DataParse>(Request request);
 
   void upload();
 

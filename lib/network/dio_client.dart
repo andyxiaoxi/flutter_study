@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
+import 'package:handclick/network/const/data_type.dart';
+import 'package:handclick/network/handle/network_state_handle.dart';
+import 'package:handclick/network/handle/token_handle.dart';
 import 'package:handclick/network/http.dart';
 import 'package:handclick/network/http_config.dart';
 import 'package:handclick/network/request/http_methond.dart';
 import 'package:handclick/network/request/request.dart';
 import 'package:handclick/network/request/request_json.dart';
+import 'package:handclick/network/response/data_parse.dart';
 import 'package:handclick/network/response/deafult_response.dart';
 import 'package:handclick/network/response/response.dart' as custom;
 import 'package:handclick/network/response/response_json.dart';
@@ -20,8 +26,34 @@ import 'package:handclick/network/response/response_json.dart';
 //当是一个特别的网络请求，需要创建一个新的httpClient对象
 
 //这些拦截器和https,请求头参数，是否统一放到配置头里面
+
+
+//网络框架中的ui层
+//怎么关联这些， 或者引入这些ui的东西 ，能把算到  具体业务里吗？
+//思考： 如果增加新的业务， 继承父类，扩展
+//可是我们的业务，和具体的 某个库，某个协议无关， 因此，是不是需要设计一些类，去管理？
+
+// 我的想法是，把无网处理，token处理，抽取公共？？
+// 请问我这种方式可行吗？
+// 讨论： 抽取方式的可行性
+// 抽取的特点
+// 1,共性
+// 2,父子，兄弟
+// 3,在使用他们的最高抽想层，使用都是他们的共有
+// 从上面的特点出发，token 业务和无网业务，没有共性
+// 因为需要设计不同的类处理
+
+//新问题：问究竟设一个类处理，还是方法来处理，这些业务？？？
+//分析： 1,方法 2,类
+//      唯一场景，假设改动时
+//      方法:一定需要改动
+//        类：可以通过子类，这种方式改动
+//结论： 那还是设计类，比较好
+
+
+
 class DioClient extends HttpClient {
-  DioClient(super.httpConfig);
+  DioClient(super.httpConfig,{this.tokenHandle,this.netWorkStateHandle});
 
   Dio? _dio;
 
@@ -40,10 +72,26 @@ class DioClient extends HttpClient {
 
   }
 
+  //---------------------------
+  // 下面是一些业务处理类字段
+  // 假设如果要增加新的业务，又该怎么处理呢
+  // 1,修改当前类，增加字段（好像违背了solid原则）
+  // 2,子类继承该类，增加业务字段
+  // 字段访问限制性
+  // 问题： 1,这些业务字段，需要被外部访问吗？（刚觉，应该私有，外部访问，干嘛？？）
+  //       2,但是如果设计为私有变量，外部继承，能修改吗？
+  // 字段的赋值，在哪些地方赋值
+  // 1,构造方法
+  // 2,创建dioclient 对象，外部赋值也行，（好处：可以动态改变业务处理对象）
+  //--------------------------
+  TokenHandle? tokenHandle;
+  NetWorkStateHandle? netWorkStateHandle;
 
 
+  // 我定义泛型Response<T>, 但是类里面没有使用它，（这里就存在设计问题）
+  //
   @override
-  Future<custom.Response<T>> send<T> (Request request) async{
+  Future<custom.Response<T>> send<T extends DataParse> (Request request) async{
     //没有dio 创建dio,并初始化配置
     if(_dio==null){
       init();
@@ -72,7 +120,7 @@ class DioClient extends HttpClient {
         //无网，构造一个无网的响应对象
         //需要把这个无网的响应对象，返回出去吗？
         //增加ui提示
-        return  DefaultResponse();
+        return DefaultResponse();
       }
     }
 
@@ -90,12 +138,42 @@ class DioClient extends HttpClient {
 
     //第四步，响应对象处理
 
-    //不同数据格式的请求
-    if(request.runtimeType is JsonRequest){
+    //响应对象的，采用什么格式，去解析成对应的具体类型
+    //1,外部已经告知当前返回对象类型
+    //2,内部运行检测当前是什么类型
 
-      var jsonResult = JsonResponse(response).ParseRawData(response.data);
+
+    //思考： 我们发送请求，应该是已经告知服务器，当前采用什么数据格式，（请求头配置，数据格式字段），要不然服务器，不知道，
+    //怎么解析数据
+    //由上面推断：
+    //其实我们在这里已经知道服务器的数据格式（可能有误，建设客户端传的json请求，但是服务器返回的是pb响应，所以这里存疑）
+
+    //总结：此时，我们已经知道，具体返回的数据类型（部分对，如同上面的括号里说明）
+
+    //那么下面的代码就有问题，不能根据请求对象的类型，去觉得服务器返回的是什么格式数据(但是通常可以这么做)
+    //if(request.runtimeType is JsonRequest){
+    // var jsonResult = JsonResponse(response).ParseRawData(response.data);
+    //}
+
+    //新问题：业务对象，能设计即支持pb，也能支持json,(我觉得可以，因为java可以)
+    //看了chatgpt的回答，会有2个类，这2个类字段相同，一个类是pb生成的dart类，一个类是含有 转二进制数据
+    //转换成pb的方法
+
+
+    //重大问题， 这里需要创建泛型对象，T var = T(), 思路有问题啊，为啥会卡在这里啊 ★★
+    if(dataType==DataType.json){
+      //json
+       jsonDecode(response.data);
+    }else{
+      //pb
     }
+
+    return DefaultResponse();
   }
+
+  ///测试字段，记录当前传输格式
+  DataType dataType= DataType.json;
+
 
   @override
   void download() {}
