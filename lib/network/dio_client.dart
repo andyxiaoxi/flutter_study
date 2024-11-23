@@ -4,6 +4,7 @@ import 'package:handclick/network/http_config.dart';
 import 'package:handclick/network/request/http_methond.dart';
 import 'package:handclick/network/request/request.dart';
 import 'package:handclick/network/request/request_json.dart';
+import 'package:handclick/network/response/deafult_response.dart';
 import 'package:handclick/network/response/response.dart' as custom;
 import 'package:handclick/network/response/response_json.dart';
 
@@ -42,7 +43,7 @@ class DioClient extends HttpClient {
 
 
   @override
-  void send(Request request) async{
+  Future<custom.Response<T>> send<T> (Request request) async{
     //没有dio 创建dio,并初始化配置
     if(_dio==null){
       init();
@@ -71,7 +72,7 @@ class DioClient extends HttpClient {
         //无网，构造一个无网的响应对象
         //需要把这个无网的响应对象，返回出去吗？
         //增加ui提示
-        return;
+        return  DefaultResponse();
       }
     }
 
@@ -155,3 +156,4 @@ class DioClient extends HttpClient {
 }
 //检测网络的方法， 交给使用者，检测
 typedef CheckNetWorker = bool Function();
+

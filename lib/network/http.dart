@@ -27,7 +27,8 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:handclick/network/http_config.dart';
-import 'package:dio/dio.dart';
+import 'response/response.dart';
+import 'request/request.dart';
 
 ///为啥设置为抽象类，因为用户可能基于Dio ,也可能是其他库
 abstract class HttpClient {
@@ -36,18 +37,18 @@ abstract class HttpClient {
 
   HttpClient(this.httpConfig);
 
-  void send();
+  //未来会设置，同步发送，异步发送
+
+  Future<Response<T>> send<T>(Request request);
 
   void upload();
 
   void download();
 
-
   //上面的方法，是请求的一些基本方法
   //-------------------------------------------
   //我也不知道为啥，要添加下面的方法
   //下面的方法，用来读取http的配置信息，然后给底层库设置
-
 }
 
 //第一步
@@ -66,7 +67,7 @@ abstract class HttpClient {
 //   2, send方法中描述 {1,参数 2,泛型方法}
 //   讨论：这2种方式可行性
 //   参数方式： 那么需要传递一个具体响应对象，需要构造一个
-//   泛型方法： send<T>
+//   泛型方法： send<T> ---------------【√】
 
 //第三步
 //知道了响应对象具体类型， 现在需要把响应原始数据，转成 具体类型
@@ -74,36 +75,3 @@ abstract class HttpClient {
 // 什么方式  转换成泛型 T 呢  T resp = (什么方式转换)，是toJson,还是toPb,需要有人告诉我，采用什么方法转换;
 //因此，1，可能在某个配置，此次通信的方式，2，send方法里参数 3，泛型T对象有含有通信参数（放在这里合适吗）4，请求对象里含有此次通信格式
 //假设知道采用json格式， 就调用 T().toJson(响应原始数据);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void test(){
-  Dio().post(path)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
