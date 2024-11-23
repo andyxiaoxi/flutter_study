@@ -1,0 +1,19 @@
+@startuml
+'https://plantuml.com/class-diagram
+class Person{
+ int age
+ String name
+ test()
+}
+
+class ArrayList {
+Object[] elementData
+size()
+}
+
+enum TimeUnit {
+DAYS
+HOURS
+MINUTES
+}
+@enduml
